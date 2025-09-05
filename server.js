@@ -43,13 +43,43 @@ app.post('/api/scores', (req, res) => {
 });
 
 // Rota para buscar os top 10 scores
-app.get('/api/scores', (req, res) => {
-  try {
-    const scores = db.prepare('SELECT * FROM scores ORDER BY score DESC LIMIT 10').all();
-    res.json(scores);
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Erro ao buscar scores' });
-  }
+app.get('/', (req, res) => {
+    res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Jogo da Memória do Zoológico</title>
+            <style>
+                body { 
+                    font-family: Arial, sans-serif; 
+                    text-align: center; 
+                    padding: 50px; 
+                    background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+                }
+                h1 { color: #2c5530; }
+                a {
+                    display: inline-block;
+                    margin: 20px;
+                    padding: 15px 30px;
+                    background: #28a745;
+                    color: white;
+                    text-decoration: none;
+                    border-radius: 10px;
+                    font-size: 1.2rem;
+                }
+                a:hover { background: #218838; }
+            </style>
+        </head>
+        <body>
+            <h1>🦁 Jogo da Memória do Zoológico 🐘</h1>
+            <p>Servidor está funcionando perfeitamente!</p>
+            <div>
+                <a href="/api/scores">Ver Ranking API</a>
+                <a href="https://seujogo.netlify.app">Jogar Agora</a>
+            </div>
+        </body>
+        </html>
+    `);
 });
 
 // Inicia o servidor
