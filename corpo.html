@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogo da Memória do Zoológico</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #2c5530;
+        }
+
+        .title {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .game-info {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .info-item {
+            background: rgba(255,255,255,0.9);
+            padding: 10px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .lives {
+            color: #e74c3c;
+        }
+
+        .score {
+            color: #27ae60;
+        }
+
+        .timer {
+            color: #3498db;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        .card {
+            width: 80px;
+            height: 80px;
+            background: #fff;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        .card.flipped {
+            background: #f8f9fa;
+        }
+
+        .card.matched {
+            background: #d4edda;
+            border: 2px solid #28a745;
+        }
+
+        .card-back {
+            font-size: 2rem;
+            color: #6c757d;
+        }
+
+        .card-front {
+            font-size: 2.5rem;
+            display: none;
+        }
+
+        .card.flipped .card-back {
+            display: none;
+        }
+
+        .card.flipped .card-front {
+            display: block;
+        }
+
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .game-over-content {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 400px;
+        }
+
+        .game-over h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: #2c5530;
+        }
+
+        .final-score {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #27ae60;
+        }
+
+        .restart-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .restart-btn:hover {
+            background: #218838;
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .card-front {
+                font-size: 2rem;
+            }
+            
+            .game-info {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .title {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1 class="title">🦁 Jogo da Memória do Zoológico 🐘</h1>
+        <div class="game-info">
+            <div class="info-item lives">
+                <span>❤️ Vidas: <span id="lives">4</span></span>
+            </div>
+            <div class="info-item score">
+                <span>⭐ Pontos: <span id="score">0</span></span>
+            </div>
+            <div class="info-item timer">
+                <span>⏰ Tempo: <span id="timer">3:00</span></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="game-board" id="gameBoard"></div>
+
+    <div class="game-over" id="gameOver">
+        <div class="game-over-content">
+            <h2 id="gameOverTitle">Fim de Jogo!</h2>
+            <div class="final-score" id="finalScore">Pontuação Final: 0</div>
+            <button class="restart-btn" onclick="restartGame()">🔄 Jogar Novamente</button>
+        </div>
+    </div>
+
+    <script>
+        // Animais do zoológico (12 pares + 1 extra para 25 cartas)
+        const animals = ['🦁', '🐘', '🦒', '🐵', '🐯', '🐼', '🦓', '🦏', '🐨', '🦘', '🐧', '🦜', '🐊'];
+        
+        let gameState = {
+            cards: [],
+            flippedCards: [],
+            matchedPairs: 0,
+            lives: 4,
+            score: 0,
+            timeLeft: 180, // 3 minutos em segundos
+            gameActive: true,
+            timer: null
+        };
+
+        function initGame() {
+            // Criar array de cartas (12 pares + 1 carta extra)
+            const cardPairs = [];
+            for (let i = 0; i < 12; i++) {
+                cardPairs.push(animals[i], animals[i]);
+            }
+            cardPairs.push(animals[12]); // Carta extra para completar 25
+
+            // Embaralhar cartas
+            gameState.cards = shuffleArray(cardPairs);
+            
+            // Resetar estado do jogo
+            gameState.flippedCards = [];
+            gameState.matchedPairs = 0;
+            gameState.lives = 4;
+            gameState.score = 0;
+            gameState.timeLeft = 180;
+            gameState.gameActive = true;
+
+            createBoard();
+            updateUI();
+            startTimer();
+        }
+
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        function createBoard() {
+            const board = document.getElementById('gameBoard');
+            board.innerHTML = '';
+
+            gameState.cards.forEach((animal, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.dataset.index = index;
+                card.dataset.animal = animal;
+                
+                card.innerHTML = `
+                    <div class="card-back">🎴</div>
+                    <div class="card-front">${animal}</div>
+                `;
+                
+                card.addEventListener('click', () => flipCard(index));
+                board.appendChild(card);
+            });
+        }
+
+        function flipCard(index) {
+            if (!gameState.gameActive) return;
+            
+            const card = document.querySelector(`[data-index="${index}"]`);
+            
+            // Não permitir clicar na mesma carta ou cartas já combinadas
+            if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+            
+            // Não permitir mais de 2 cartas viradas
+            if (gameState.flippedCards.length >= 2) return;
+
+            // Virar carta
+            card.classList.add('flipped');
+            gameState.flippedCards.push({index, animal: gameState.cards[index], element: card});
+
+            // Verificar se duas cartas foram viradas
+            if (gameState.flippedCards.length === 2) {
+                setTimeout(checkMatch, 1000);
+            }
+        }
+
+        function checkMatch() {
+            const [card1, card2] = gameState.flippedCards;
+            
+            if (card1.animal === card2.animal) {
+                // Acerto!
+                card1.element.classList.add('matched');
+                card2.element.classList.add('matched');
+                gameState.matchedPairs++;
+                gameState.score += 3;
+                
+                // Verificar vitória (12 pares possíveis)
+                if (gameState.matchedPairs >= 12) {
+                    endGame('Parabéns! Você venceu! 🎉');
+                }
+            } else {
+                // Erro!
+                card1.element.classList.remove('flipped');
+                card2.element.classList.remove('flipped');
+                gameState.lives--;
+                gameState.score = Math.max(0, gameState.score - 1);
+                
+                // Verificar derrota
+                if (gameState.lives <= 0) {
+                    endGame('Game Over! Suas vidas acabaram! 💔');
+                }
+            }
+            
+            gameState.flippedCards = [];
+            updateUI();
+        }
+
+        function startTimer() {
+            gameState.timer = setInterval(() => {
+                gameState.timeLeft--;
+                updateUI();
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame('Tempo Esgotado! ⏰');
+                }
+            }, 1000);
+        }
+
+        function updateUI() {
+            document.getElementById('lives').textContent = gameState.lives;
+            document.getElementById('score').textContent = gameState.score;
+            
+            const minutes = Math.floor(gameState.timeLeft / 60);
+            const seconds = gameState.timeLeft % 60;
+            document.getElementById('timer').textContent = 
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function endGame(message) {
+    gameState.gameActive = false;
+    clearInterval(gameState.timer);
+    
+    document.getElementById('gameOverTitle').textContent = message;
+    document.getElementById('finalScore').textContent = `Pontuação Final: ${gameState.score}`;
+    document.getElementById('gameOver').style.display = 'flex';
+
+    // ✅ NOVO CÓDIGO: Pedir o nome do jogador e salvar o score
+    const playerName = prompt('Parabéns! Digite seu nome para salvar sua pontuação:') || 'Anônimo';
+    
+    // Enviar o score para o servidor
+    fetch('http://localhost:3000/api/scores', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            playerName: playerName,
+            score: gameState.score
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Score salvo:', data);
+    })
+    .catch(error => {
+        console.error('Erro ao salvar score:', error);
+    });
+}
+
+        function restartGame() {
+            document.getElementById('gameOver').style.display = 'none';
+            clearInterval(gameState.timer);
+            initGame();
+        }
+
+        // Iniciar o jogo
+        initGame();
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'97a56465d00b5226',t:'MTc1NzA3MTgwMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
