@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -7,14 +9,14 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname))); // Serve arquivos estáticos
 
-// Banco de dados em memória (simples e funciona sem instalação)
+// Banco de dados em memória
 let scores = [];
 
 // Rotas da API
 app.get('/api/scores', (req, res) => {
   try {
-    // Ordena por score decrescente e pega top 10
     const topScores = [...scores]
       .sort((a, b) => b.score - a.score)
       .slice(0, 10)
@@ -40,7 +42,6 @@ app.post('/api/scores', (req, res) => {
       return res.status(400).json({ success: false, message: 'Dados incompletos' });
     }
 
-    // Adiciona ao array em memória
     scores.push({
       player_name: playerName,
       score: score,
@@ -57,43 +58,29 @@ app.post('/api/scores', (req, res) => {
   }
 });
 
-// Rota principal
+// Rota principal - Serve o jogo completo
 app.get('/', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Jogo da Memória do Zoológico</title>
+  try {
+    res.sendFile(path.join(__dirname, 'index.html'));
+  } catch (error) {
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Jogo da Memória - Erro</title>
         <style>
-            body { 
-                font-family: Arial, sans-serif; 
-                text-align: center; 
-                padding: 50px; 
-                background: linear-gradient(135deg, #87CEEB 0%, #98FB98 100%);
-            }
-            h1 { color: #2c5530; }
-            a {
-                display: inline-block;
-                margin: 20px;
-                padding: 15px 30px;
-                background: #28a745;
-                color: white;
-                text-decoration: none;
-                border-radius: 10px;
-                font-size: 1.2rem;
-            }
-            a:hover { background: #218838; }
+          body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
+          h1 { color: #e74c3c; }
         </style>
-    </head>
-    <body>
-        <h1>🦁 Jogo da Memória do Zoológico 🐘</h1>
-        <p>Servidor está funcionando perfeitamente!</p>
-        <div>
-            <a href="/api/scores">Ver Ranking API</a>
-        </div>
-    </body>
-    </html>
-  `);
+      </head>
+      <body>
+        <h1>❌ Erro ao carregar o jogo</h1>
+        <p>Arquivo index.html não encontrado</p>
+        <p>Verifique se o arquivo foi commitado no GitHub</p>
+      </body>
+      </html>
+    `);
+  }
 });
 
 // Health check para o Render
@@ -103,6 +90,7 @@ app.get('/health', (req, res) => {
 
 // Inicia o servidor
 app.listen(PORT, '0.0.0.0', () => {
-    console.log(`✅ Servidor rodando na porta ${PORT}`);
-    console.log(`🌐 Acesse: http://localhost:${PORT}`);
+  console.log(`✅ Servidor rodando na porta ${PORT}`);
+  console.log(`🌐 Jogo disponível em: http://localhost:${PORT}`);
+  console.log(`📊 API de scores em: http://localhost:${PORT}/api/scores`);
 });
